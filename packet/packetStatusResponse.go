@@ -21,7 +21,7 @@ type StatusResponseConfig struct {
 func EncodeStatusResponse(cfg StatusResponseConfig) Message {
 	status := fmt.Sprintf(statusJson, cfg.PlayerCount, cfg.Description, cfg.Favicon)
 	statusEncoded := ds.WriteString(status)
-	return Message{ID: StatusResponsePacketId, Data: statusEncoded}
+	return Message{PacketId: StatusResponsePacketId, Data: statusEncoded}
 }
 
 const statusJson string = `{

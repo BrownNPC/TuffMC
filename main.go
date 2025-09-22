@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"log/slog"
 	"net"
-	"time"
 	"tuff/connection"
 	"tuff/packet"
 )
@@ -39,8 +37,14 @@ func handleRequest(socket net.Conn) {
 	defer socket.Close() // Ensure the connection is closed when the function exits.
 
 	conn := connection.NewConnection(socket)
-	_, err := conn.ReadMsg(1)
-	if err != nil {
-		fmt.Println(err)
+	ok, err := conn.HandleHandshake(packet.StatusResponseConfig{
+		PlayerCount: 0,
+		Description: "Tuff server gng",
+	})
+	if !ok {
+		if err != nil {
+			slog.Error("could not handle handshake", "error", err)
+		}
+		return
 	}
 }

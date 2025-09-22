@@ -1,12 +1,14 @@
 package connection
 
 import (
+	"fmt"
 	"net"
 	"time"
 	"tuff/packet"
 )
 
 type Connection struct {
+	State      packet.ConnectionState
 	IsLoggedIn bool
 	// underlying socket
 	conn net.Conn
@@ -25,10 +27,24 @@ func NewConnection(conn net.Conn) *Connection {
 // ReadMsg waits for a new message with timeout
 func (c *Connection) ReadMsg(timeout time.Duration) (m packet.Message, err error) {
 	c.conn.SetReadDeadline(time.Now().Add(timeout))
+	// read packet from socket
 	n, err := c.conn.Read(c.buf)
 	if err != nil {
-		return
+		return m, fmt.Errorf("failed to read socket: %w", err)
 	}
+	// decode packet
 	m, err = packet.DecodeMessage(c.buf[:n])
+	if err != nil {
+		return m, fmt.Errorf("failed to decode message: %w", err)
+	}
+	return
+}
+
+// Encode and WriteMessage to the socket
+func (c *Connection) WriteMessage(m packet.Message) (err error) {
+	_, err = c.conn.Write(m.Encode())
+	if err != nil {
+		return fmt.Errorf("failed to write message to socket: %w", err)
+	}
 	return
 }
