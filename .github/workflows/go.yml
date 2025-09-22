@@ -1,12 +1,12 @@
-
+# .github/workflows/release.yml
 name: goreleaser
 
 on:
   pull_request:
   push:
-    # # run only against tags
-    # tags:
-    #   - "*"
+    # run only against tags
+    tags:
+      - "*"
 
 permissions:
   contents: write
@@ -26,6 +26,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: stable
+      # More assembly might be required: Docker logins, GPG, etc.
+      # It all depends on your needs.
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -36,3 +38,5 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Your GoReleaser Pro key, if you are using the 'goreleaser-pro' distribution
+          # GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
