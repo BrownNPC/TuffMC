@@ -5,8 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"net"
-	"tuff/tuff"
-	"tuff/tuff/packets"
+	"tuff/packet"
 )
 
 func main() {
@@ -30,6 +29,12 @@ func main() {
 
 // handleRequest handles incoming requests from clients.
 func handleRequest(conn net.Conn) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("Recovered from error", "error", r)
+		}
+	}()
+
 	defer conn.Close() // Ensure the connection is closed when the function exits.
 
 	// Make a buffer to hold incoming data.
@@ -41,15 +46,23 @@ func handleRequest(conn net.Conn) {
 		slog.Error("failed to read tcp conn")
 		return
 	}
-	packet, err := tuff.ReadMessage(buf[:n])
+	msg, err := packet.DecodeMessage(buf[:n])
 	if err != nil {
 		slog.Error("failed to read packet", "error", err)
 		return
 	}
-	handshake, err := packets.DecodeHandshake(packet.Data)
+	handshake, err := packet.DecodeHandshake(msg.Data)
 	if err != nil {
-		slog.Error("failed to decode handshake packet", "error", err)
+		slog.Error("failed to decode handshake", "error", err)
 		return
 	}
 	fmt.Printf("%+v", handshake)
+
+	msg = packet.EncodeStatusResponse(2, "Sigma", "")
+	encodedMsg := packet.EncodeMessage(msg)
+	_, err = conn.Write(encodedMsg)
+	if err != nil {
+		slog.Error("failed to write to socket", "error", err)
+		return
+	}
 }

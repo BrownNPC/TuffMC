@@ -1,7 +1,8 @@
 package ds
 
 import (
-	"fmt"
+	"errors"
+	"slices"
 )
 
 // Decode UTF-8 string prefixed with its size in bytes as a VarInt.
@@ -11,7 +12,14 @@ func ReadString(b []byte) (string, int, error) {
 	if err != nil {
 		return "", n, err
 	}
-	fmt.Println(strLen)
+	if n+strLen > len(b[n:]) {
+		return "", 0, errors.New("string length too long")
+	}
 	str := b[n : n+strLen]
 	return string(str), n + strLen, nil
+}
+func WriteString(s string) []byte {
+	strLen := len(s)
+	encodedStrlen := WriteVarInt(uint(strLen))
+	return slices.Concat(encodedStrlen, []byte(s))
 }

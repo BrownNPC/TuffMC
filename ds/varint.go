@@ -40,5 +40,6 @@ func ReadVarInt(b []byte) (value, n int, err error) {
 			return 0, 0, errors.New("VarInt is too big")
 		}
 	}
+	err = errors.New("buffer too small")
 	return
 }

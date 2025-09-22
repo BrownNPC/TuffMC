@@ -1,19 +1,19 @@
-package tuff
+package packet
 
 import (
+	"slices"
 	"tuff/ds"
-	"tuff/tuff/packets"
 )
 
 type Message struct {
 	// Length of packet data + length of the packet ID
-	ID packets.PacketID
+	ID PacketId
 	//Depends on the connection state and packet ID, see the sections below
 	// https://minecraft.wiki/w/Protocol?oldid=2772385#Packet_format
 	Data []byte
 }
 
-func ReadMessage(b []byte) (p Message, err error) {
+func DecodeMessage(b []byte) (p Message, err error) {
 	length, n, err := ds.ReadVarInt(b)
 	if err != nil {
 		return
@@ -25,7 +25,15 @@ func ReadMessage(b []byte) (p Message, err error) {
 	}
 
 	return Message{
-		ID:   packets.PacketID(packetId),
+		ID:   PacketId(packetId),
 		Data: b[n:length],
 	}, nil
+}
+func EncodeMessage(m Message) []byte {
+	packetId := ds.WriteVarInt(uint(m.ID))
+	// Length of packet id+data
+	length := len(packetId) + len(m.Data)
+	encodedLength := ds.WriteVarInt(uint(length))
+
+	return slices.Concat(encodedLength, packetId, m.Data)
 }

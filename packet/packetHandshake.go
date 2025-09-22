@@ -1,4 +1,4 @@
-package packets
+package packet
 
 import (
 	"encoding/binary"
@@ -12,7 +12,7 @@ const (
 	StateLogin  LoginState = 2
 )
 
-const HandshakePacketID PacketID = 0x00
+const HandshakePacketID PacketId = 0x00
 
 // https://minecraft.wiki/w/Java_Edition_protocol/Server_List_Ping#Handshake
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Handshake
