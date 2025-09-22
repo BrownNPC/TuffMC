@@ -5,11 +5,12 @@ import (
 	"tuff/ds"
 )
 
-type LoginState = int
+type ConnectionState = int
 
 const (
-	StateStatus LoginState = 1
-	StateLogin  LoginState = 2
+	StateStatus ConnectionState = 1
+	StateLogin  ConnectionState = 2
+	StatePlay   ConnectionState = 3
 )
 
 const HandshakePacketID PacketId = 0x00
@@ -24,7 +25,7 @@ type Handshake struct {
 	// Default is 25565.
 	ServerPort uint16
 	// 1 for status, 2 for login
-	NextState LoginState
+	NextState ConnectionState
 }
 
 func DecodeHandshake(data []byte) (h Handshake, err error) {

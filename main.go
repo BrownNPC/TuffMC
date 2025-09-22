@@ -5,6 +5,8 @@ import (
 	"log"
 	"log/slog"
 	"net"
+	"time"
+	"tuff/connection"
 	"tuff/packet"
 )
 
@@ -24,45 +26,21 @@ func main() {
 		// Handle connections in a new goroutine.
 		go handleRequest(conn)
 	}
-
 }
 
 // handleRequest handles incoming requests from clients.
-func handleRequest(conn net.Conn) {
+func handleRequest(socket net.Conn) {
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Error("Recovered from error", "error", r)
 		}
 	}()
 
-	defer conn.Close() // Ensure the connection is closed when the function exits.
+	defer socket.Close() // Ensure the connection is closed when the function exits.
 
-	// Make a buffer to hold incoming data.
-	var buf = make([]byte, 1024)
-
-	// Read the incoming connection into the buffer.
-	n, err := conn.Read(buf[:])
+	conn := connection.NewConnection(socket)
+	_, err := conn.ReadMsg(1)
 	if err != nil {
-		slog.Error("failed to read tcp conn")
-		return
-	}
-	msg, err := packet.DecodeMessage(buf[:n])
-	if err != nil {
-		slog.Error("failed to read packet", "error", err)
-		return
-	}
-	handshake, err := packet.DecodeHandshake(msg.Data)
-	if err != nil {
-		slog.Error("failed to decode handshake", "error", err)
-		return
-	}
-	fmt.Printf("%+v", handshake)
-
-	msg = packet.EncodeStatusResponse(2, "Sigma", "")
-	encodedMsg := packet.EncodeMessage(msg)
-	_, err = conn.Write(encodedMsg)
-	if err != nil {
-		slog.Error("failed to write to socket", "error", err)
-		return
+		fmt.Println(err)
 	}
 }

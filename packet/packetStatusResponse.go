@@ -11,8 +11,15 @@ type StatusResponse struct {
 
 const StatusResponsePacketId PacketId = 0x00
 
-func EncodeStatusResponse(playerCount int, description string, favicon string) Message {
-	status := fmt.Sprintf(statusJson, playerCount, description, favicon)
+type StatusResponseConfig struct {
+	PlayerCount int
+	Description string
+	// base64 encoded image
+	Favicon string
+}
+
+func EncodeStatusResponse(cfg StatusResponseConfig) Message {
+	status := fmt.Sprintf(statusJson, cfg.PlayerCount, cfg.Description, cfg.Favicon)
 	statusEncoded := ds.WriteString(status)
 	return Message{ID: StatusResponsePacketId, Data: statusEncoded}
 }

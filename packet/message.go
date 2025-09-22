@@ -13,8 +13,8 @@ type Message struct {
 	Data []byte
 }
 
-func DecodeMessage(b []byte) (p Message, err error) {
-	length, n, err := ds.ReadVarInt(b)
+func DecodeMessage(b []byte) (_ Message, err error) {
+	payloadLength, n, err := ds.ReadVarInt(b)
 	if err != nil {
 		return
 	}
@@ -26,10 +26,11 @@ func DecodeMessage(b []byte) (p Message, err error) {
 
 	return Message{
 		ID:   PacketId(packetId),
-		Data: b[n:length],
+		Data: b[n:payloadLength],
 	}, nil
 }
-func EncodeMessage(m Message) []byte {
+
+func (m Message) Encode() []byte {
 	packetId := ds.WriteVarInt(uint(m.ID))
 	// Length of packet id+data
 	length := len(packetId) + len(m.Data)
