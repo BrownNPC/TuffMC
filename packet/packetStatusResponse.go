@@ -4,23 +4,22 @@ import (
 	"fmt"
 	"tuff/ds"
 )
-
-type StatusResponse struct {
-	JSONResponse string
-}
-
 const StatusResponsePacketId PacketId = 0x00
 
-type StatusResponseConfig struct {
+// https://minecraft.wiki/w/Protocol?oldid=2772385#Status
+// S -> C
+type StatusResponsePacketConfig struct {
 	PlayerCount int
 	Description string
 	// base64 encoded image
 	Favicon string
 }
 
-func EncodeStatusResponse(cfg StatusResponseConfig) Message {
+// https://minecraft.wiki/w/Protocol?oldid=2772385#Status
+// S -> C
+func EncodeStatusResponsePacket(cfg StatusResponsePacketConfig) Message {
 	status := fmt.Sprintf(statusJson, cfg.PlayerCount, cfg.Description, cfg.Favicon)
-	statusEncoded := ds.WriteString(status)
+	statusEncoded := ds.EncodeString(status)
 	return Message{PacketId: StatusResponsePacketId, Data: statusEncoded}
 }
 

@@ -4,7 +4,8 @@ import (
 	"errors"
 )
 
-func WriteVarInt(value uint) []byte {
+// https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol?oldid=2992295#VarInt_and_VarLong
+func EncodeVarInt(value uint) []byte {
 	const SEGMENT_BITS = 0x7F
 	const CONTINUE_BIT = 0x80
 	var buf []byte
@@ -22,7 +23,7 @@ func WriteVarInt(value uint) []byte {
 }
 
 // https://minecraft.wiki/w/Minecraft_Wiki:Projects/wiki.vg_merge/Protocol?oldid=2992295#VarInt_and_VarLong
-func ReadVarInt(b []byte) (value, n int, err error) {
+func DecodeVarInt(b []byte) (value, n int, err error) {
 	const SEGMENT_BITS = 0x7F
 	const CONTINUE_BIT = 0x80
 

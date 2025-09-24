@@ -7,39 +7,61 @@ import (
 )
 
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Login
-func (conn *Connection) HandleHandshake(cfg packet.StatusResponseConfig) (bool, error) {
+func (conn *Connection) HandleHandshake(cfg packet.StatusResponsePacketConfig) error {
 	m, err := conn.ReadMsg(time.Second * 10)
 	if err != nil {
-		return false, fmt.Errorf("failed to read handshake message: %w", err)
+		return fmt.Errorf("failed to read handshake message: %w", err)
 	}
 	// C->S handshake
-	handshake, err := packet.DecodeHandshake(m.Data)
+	handshake, err := packet.DecodeHandshakePacket(m.Data)
 	if err != nil {
-		return false, fmt.Errorf("failed to decode handshake data: %w", err)
+		return fmt.Errorf("failed to decode handshake data: %w", err)
 	}
 	// Login or Status handshake?
 	switch handshake.NextState {
 	// If status request, return status and close the connection.
 	case packet.StateStatus:
-		statusMsg := packet.EncodeStatusResponse(cfg)
+		statusMsg := packet.EncodeStatusResponsePacket(cfg)
 		err = conn.WriteMessage(statusMsg)
 		if err != nil {
-			return false, fmt.Errorf("failed to write status response: %w", err)
+			return fmt.Errorf("failed to write status response: %w", err)
 		}
 		// Ping packet
 		m, err = conn.ReadMsg(time.Second * 10)
 		if err != nil {
-			return false, fmt.Errorf("failed to read ping message: %w", err)
+			return fmt.Errorf("failed to read ping message: %w", err)
 		}
 		// ping pong requires us to resend their packet
 		err = conn.WriteMessage(m)
 		if err != nil {
-			return false, fmt.Errorf("failed to respond with pong message: %w", err)
+			return fmt.Errorf("failed to respond with pong message: %w", err)
 		}
 		// status handshake complete, close connection.
 		conn.conn.Close()
-		return false, nil
+		return nil
+		// C→S: Handshake with Next State set to 2 (login)
 	case packet.StateLogin:
+		// C→S: Login Start
+		login, err := conn.ReadMsg(time.Second * 5)
+		if err != nil {
+			return fmt.Errorf("failed to recive login response: %w", err)
+		}
+		loginStartPacket, err := packet.DecodeLoginStartPacket(login.Data)
+		if err != nil {
+			return fmt.Errorf("failed to decode login start packet: %w", err)
+		}
+		// S→C: Set Compression (optional)
+		// TODO
+		// S→C: Login Success
+		loginSuccessResponseMsg := packet.EncodeLoginSuccessPacket(loginStartPacket.PlayerUsername)
+		err = conn.WriteMessage(loginSuccessResponseMsg)
+		if err != nil {
+			return fmt.Errorf("failed to write login success: %w", err)
+		}
+
+		conn.State = packet.StatePlay
+		conn.isLoggedIn.Store(true)
+		return err
 	}
-	return false, fmt.Errorf("unhandled packet state %v", handshake.NextState)
+	return fmt.Errorf("unhandled packet state %v", handshake.NextState)
 }

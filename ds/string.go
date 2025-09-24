@@ -7,19 +7,21 @@ import (
 
 // Decode UTF-8 string prefixed with its size in bytes as a VarInt.
 // Maximum length of n characters, which varies by context.
-func ReadString(b []byte) (string, int, error) {
-	strLen, n, err := ReadVarInt(b)
+// https://minecraft.wiki/w/Java_Edition_protocol/Data_types#Type:String
+func DecodeString(b []byte) (string, int, error) {
+	strLen, n, err := DecodeVarInt(b)
 	if err != nil {
 		return "", n, err
 	}
-	if n+strLen > len(b[n:]) {
+	if n+strLen > len(b) {
 		return "", 0, errors.New("string length too long")
 	}
 	str := b[n : n+strLen]
 	return string(str), n + strLen, nil
 }
-func WriteString(s string) []byte {
+//https://minecraft.wiki/w/Java_Edition_protocol/Data_types#Type:String
+func EncodeString(s string) []byte {
 	strLen := len(s)
-	encodedStrlen := WriteVarInt(uint(strLen))
+	encodedStrlen := EncodeVarInt(uint(strLen))
 	return slices.Concat(encodedStrlen, []byte(s))
 }

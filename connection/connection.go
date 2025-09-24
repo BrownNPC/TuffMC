@@ -3,13 +3,14 @@ package connection
 import (
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 	"tuff/packet"
 )
 
 type Connection struct {
 	State      packet.ConnectionState
-	IsLoggedIn bool
+	isLoggedIn atomic.Bool
 	// underlying socket
 	conn net.Conn
 	buf  []byte
@@ -17,8 +18,7 @@ type Connection struct {
 
 func NewConnection(conn net.Conn) *Connection {
 	return &Connection{
-		IsLoggedIn: false,
-		conn:       conn,
+		conn: conn,
 		// 2 MiB buffer
 		buf: make([]byte, 2*1024*1024),
 	}
@@ -47,4 +47,10 @@ func (c *Connection) WriteMessage(m packet.Message) (err error) {
 		return fmt.Errorf("failed to write message to socket: %w", err)
 	}
 	return
+}
+func (c *Connection) Close() error {
+	return c.conn.Close()
+}
+func (c *Connection) IsLoggedIn() bool {
+	return c.isLoggedIn.Load()
 }

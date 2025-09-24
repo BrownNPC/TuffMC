@@ -15,9 +15,10 @@ const (
 
 const HandshakePacketID PacketId = 0x00
 
-// https://minecraft.wiki/w/Java_Edition_protocol/Server_List_Ping#Handshake
+// https://minecraft.wiki/w/Java_Edition_protocol/Packets#Handshake
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Handshake
-type Handshake struct {
+// C->S
+type HandshakePacket struct {
 	//The version that the client plans on using to connect to the server
 	ProtocolVersion int
 	// Hostname or IP, e.g. localhost or 127.0.0.1, that was used to connect.
@@ -28,23 +29,23 @@ type Handshake struct {
 	NextState ConnectionState
 }
 
-func DecodeHandshake(data []byte) (h Handshake, err error) {
+func DecodeHandshakePacket(data []byte) (p HandshakePacket, err error) {
 	var n int
-	h.ProtocolVersion, n, err = ds.ReadVarInt(data)
+	p.ProtocolVersion, n, err = ds.DecodeVarInt(data)
 	if err != nil {
 		return
 	}
 	data = data[n:]
-	h.ServerAddress, n, err = ds.ReadString(data)
+	p.ServerAddress, n, err = ds.DecodeString(data)
 	if err != nil {
 		return
 	}
 	data = data[n:]
 
-	h.ServerPort = binary.BigEndian.Uint16(data)
+	p.ServerPort = binary.BigEndian.Uint16(data)
 	// uint16 = 2 bytes
 	data = data[2:]
 
-	h.NextState, _, err = ds.ReadVarInt(data)
+	p.NextState, _, err = ds.DecodeVarInt(data)
 	return
 }
