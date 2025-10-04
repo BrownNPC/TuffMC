@@ -1,7 +1,6 @@
 package packet
 
 import (
-	"encoding/binary"
 	"slices"
 	"tuff/ds"
 )
@@ -37,7 +36,8 @@ func EncodeJoinGamePacket(cfg JoinGamePacketConfig) Message {
 			ds.EncodeInt(cfg.EntityID),
 			[]byte{cfg.Gamemode},
 			ds.EncodeInt(cfg.Dimension),
-			[]byte{cfg.Difficulty, cfg.MaxPlayers},
+			[]byte{cfg.Difficulty,
+				cfg.MaxPlayers},
 			ds.EncodeString(cfg.LevelType),
 			ds.EncodeBool(cfg.ReducedDebugInfo),
 		),

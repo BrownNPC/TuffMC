@@ -21,7 +21,6 @@ func DecodeString(b []byte) (string, int, error) {
 }
 //https://minecraft.wiki/w/Java_Edition_protocol/Data_types#Type:String
 func EncodeString(s string) []byte {
-	strLen := len(s)
-	encodedStrlen := EncodeVarInt(uint(strLen))
+	encodedStrlen := EncodeVarInt(uint(len(s)))
 	return slices.Concat(encodedStrlen, []byte(s))
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"tuff/ds"
 )
+
 const StatusResponsePacketId PacketId = 0x00
 
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Status
@@ -19,8 +20,8 @@ type StatusResponsePacketConfig struct {
 // S -> C
 func EncodeStatusResponsePacket(cfg StatusResponsePacketConfig) Message {
 	status := fmt.Sprintf(statusJson, cfg.PlayerCount, cfg.Description, cfg.Favicon)
-	statusEncoded := ds.EncodeString(status)
-	return Message{PacketId: StatusResponsePacketId, Data: statusEncoded}
+	return Message{PacketId: StatusResponsePacketId,
+		Data: ds.EncodeString(status)}
 }
 
 const statusJson string = `{

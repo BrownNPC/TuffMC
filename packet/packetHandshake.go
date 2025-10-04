@@ -2,6 +2,7 @@ package packet
 
 import (
 	"encoding/binary"
+	"fmt"
 	"tuff/ds"
 )
 
@@ -29,7 +30,11 @@ type HandshakePacket struct {
 	NextState ConnectionState
 }
 
-func DecodeHandshakePacket(data []byte) (p HandshakePacket, err error) {
+func DecodeHandshakePacket(m Message) (p HandshakePacket, err error) {
+	data := m.Data
+	if m.PacketId != HandshakePacketID {
+		return p, fmt.Errorf("packet is not a handshake")
+	}
 	var n int
 	p.ProtocolVersion, n, err = ds.DecodeVarInt(data)
 	if err != nil {

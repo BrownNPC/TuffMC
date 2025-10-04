@@ -1,10 +1,13 @@
 package connection
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"sync/atomic"
 	"time"
+	"tuff/ds"
 	"tuff/packet"
 )
 
@@ -12,41 +15,48 @@ type Connection struct {
 	State      packet.ConnectionState
 	isLoggedIn atomic.Bool
 	// underlying socket
-	conn net.Conn
-	buf  []byte
+	conn   net.Conn
+	reader *bufio.Reader
 }
 
 func NewConnection(conn net.Conn) *Connection {
 	return &Connection{
-		conn: conn,
-		// 2 MiB buffer
-		buf: make([]byte, 2*1024*1024),
+		conn:   conn,
+		reader: bufio.NewReader(conn),
 	}
 }
 
 // ReadMsg waits for a new message with timeout
+// https://minecraft.wiki/w/Protocol?oldid=2772385#Without_compression
 func (c *Connection) ReadMsg(timeout time.Duration) (m packet.Message, err error) {
 	c.conn.SetReadDeadline(time.Now().Add(timeout))
-	// read packet from socket
-	n, err := c.conn.Read(c.buf)
+	// read packet length from socket
+	length, err := ds.DecodeVarIntFromReader(c.reader)
 	if err != nil {
-		return m, fmt.Errorf("failed to read socket: %w", err)
+		return m, fmt.Errorf("failed to read packet length: %w", err)
 	}
-	// decode packet
-	m, err = packet.DecodeMessage(c.buf[:n])
+
+	var body = make([]byte, length)
+	_, err = io.ReadFull(c.reader, body)
 	if err != nil {
-		return m, fmt.Errorf("failed to decode message: %w", err)
+		return m, fmt.Errorf("Failed reading for full packet body: %w", err)
 	}
+	packetId, n, err := ds.DecodeVarInt(body)
+	if err != nil {
+		return m, fmt.Errorf("failed to decode packet id: %w", err)
+	}
+	m.PacketId = packet.PacketId(packetId)
+	m.Data = body[n:]
 	return
 }
 
 // Encode and WriteMessage to the socket
-func (c *Connection) WriteMessage(m packet.Message) (err error) {
-	_, err = c.conn.Write(m.Encode())
+func (c *Connection) WriteMessage(m packet.Message) error {
+	_, err := c.conn.Write(m.Encode())
 	if err != nil {
 		return fmt.Errorf("failed to write message to socket: %w", err)
 	}
-	return
+	return nil
 }
 func (c *Connection) Close() error {
 	return c.conn.Close()

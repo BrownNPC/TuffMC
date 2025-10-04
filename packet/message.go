@@ -15,22 +15,22 @@ type Message struct {
 
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Without_compression
 // The base packet.
-func DecodeMessage(b []byte) (_ Message, err error) {
-	payloadLength, n, err := ds.DecodeVarInt(b)
-	if err != nil {
-		return
-	}
-	b = b[n:] // skip length field
-	packetId, n, err := ds.DecodeVarInt(b)
-	if err != nil {
-		return
-	}
+// func DecodeMessage(b []byte) (_ Message, err error) {
+// 	// payloadLength, n, err := ds.DecodeVarInt(b)
+// 	// if err != nil {
+// 	// 	return
+// 	// }
+// 	// b = b[n:] // skip length field
+// 	packetId, n, err := ds.DecodeVarInt(b)
+// 	if err != nil {
+// 		return
+// 	}
 
-	return Message{
-		PacketId: PacketId(packetId),
-		Data:     b[n:payloadLength],
-	}, nil
-}
+// 	return Message{
+// 		PacketId: PacketId(packetId),
+// 		Data:     b[n:],
+// 	}, nil
+// }
 
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Without_compression
 func (m Message) Encode() []byte {
@@ -38,6 +38,5 @@ func (m Message) Encode() []byte {
 	// Length of packet id+data
 	length := len(packetId) + len(m.Data)
 	encodedLength := ds.EncodeVarInt(uint(length))
-
 	return slices.Concat(encodedLength, packetId, m.Data)
 }

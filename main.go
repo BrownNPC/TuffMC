@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"runtime/debug"
 	"tuff/connection"
 	"tuff/packet"
 
@@ -52,6 +53,7 @@ func handleRequest(conn *connection.Connection) {
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Error("Recovered from error", "error", r)
+			fmt.Println(string(debug.Stack()))
 		}
 	}()
 	defer conn.Close()
@@ -69,7 +71,37 @@ func handleRequest(conn *connection.Connection) {
 		return
 	}
 
-	
+	err = conn.WriteMessage(packet.EncodeJoinGamePacket(packet.JoinGamePacketConfig{
+		EntityID:         0,
+		Gamemode:         0,
+		Dimension:        0,
+		Difficulty:       1,
+		MaxPlayers:       0,
+		LevelType:        "default",
+		ReducedDebugInfo: false,
+	}))
+	if err != nil {
+		slog.Error("failed to send join game packet", "error", err)
+		return
+	}
+	err = conn.WriteMessage(packet.EncodeSpawnPositionPacket(0, 100, 0))
+	if err != nil {
+		slog.Error("failed to send spawn position packet", "error", err)
+		return
+	}
+	err = conn.WriteMessage(packet.EncodePlayerPositionAndLookPacket(packet.PlayerPositionAndLookConfig{
+		X:          0,
+		Y:          0,
+		Z:          0,
+		Pitch:      0,
+		Yaw:        0,
+		Flags:      0,
+		TeleportId: 0,
+	}))
+	if err != nil {
+		slog.Error("failed to send Player Position and Look packet", "error", err)
+		return
+	}
 }
 func startTCPListener(addr string) {
 	l, err := net.Listen("tcp", addr)
