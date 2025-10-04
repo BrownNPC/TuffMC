@@ -102,6 +102,8 @@ func handleRequest(conn *connection.Connection) {
 		slog.Error("failed to send Player Position and Look packet", "error", err)
 		return
 	}
+	// hold the connection
+	select{}
 }
 func startTCPListener(addr string) {
 	l, err := net.Listen("tcp", addr)

@@ -43,7 +43,7 @@ const PlayerPositionAndLookPacketId PacketId = 0x2F
 // Pitch is measured in degrees, where 0 is looking straight ahead, -90 is looking straight up, and 90 is looking straight down.
 func EncodePlayerPositionAndLookPacket(cfg PlayerPositionAndLookConfig) Message {
 	return Message{
-		PacketId: 0,
+		PacketId: PlayerPositionAndLookPacketId,
 		Data: slices.Concat(
 			ds.EncodeDouble(cfg.X),
 			ds.EncodeDouble(cfg.Y),

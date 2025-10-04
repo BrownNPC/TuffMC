@@ -52,6 +52,7 @@ func (c *Connection) ReadMsg(timeout time.Duration) (m packet.Message, err error
 
 // Encode and WriteMessage to the socket
 func (c *Connection) WriteMessage(m packet.Message) error {
+	fmt.Printf("Sending Message: %+v\n", m)
 	_, err := c.conn.Write(m.Encode())
 	if err != nil {
 		return fmt.Errorf("failed to write message to socket: %w", err)
