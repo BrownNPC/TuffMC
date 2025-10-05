@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -14,6 +13,7 @@ import (
 )
 
 func main() {
+	go fmt.Println("Server Started")
 	go startWebsocketListener("localhost:8081")
 	startTCPListener("localhost:25565")
 }
@@ -103,7 +103,7 @@ func handleRequest(conn *connection.Connection) {
 		return
 	}
 	// hold the connection
-	select{}
+	select {}
 }
 func startTCPListener(addr string) {
 	l, err := net.Listen("tcp", addr)
@@ -129,14 +129,11 @@ func startWebsocketListener(addr string) {
 		ws, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 			InsecureSkipVerify: true,
 		})
-		ws.Write(context.Background(), websocket.MessageText, []byte(jzml))
-		fmt.Println("aaa")
 		if err != nil {
 			slog.Error("failed to accept websocket connection", "error", err)
-			return
 		}
-		conn := websocket.NetConn(context.Background(), ws, websocket.MessageBinary)
-		go handleRequest(connection.NewConnection(conn))
+		handleRequest(connection.NewEaglerConnection(ws))
+		ws.Close(websocket.StatusNormalClosure, "disconnected")
 	}))
 }
 

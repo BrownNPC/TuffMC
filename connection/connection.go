@@ -9,13 +9,19 @@ import (
 	"time"
 	"tuff/ds"
 	"tuff/packet"
+
+	"github.com/coder/websocket"
 )
 
 type Connection struct {
 	State      packet.ConnectionState
 	isLoggedIn atomic.Bool
 	// underlying socket
-	conn   net.Conn
+	conn     net.Conn
+	isEagler bool
+	// used if isEagler
+	ws *websocket.Conn
+
 	reader *bufio.Reader
 }
 
@@ -23,6 +29,14 @@ func NewConnection(conn net.Conn) *Connection {
 	return &Connection{
 		conn:   conn,
 		reader: bufio.NewReader(conn),
+	}
+}
+func NewEaglerConnection(conn *websocket.Conn) *Connection {
+	return &Connection{
+		conn:     nil,
+		isEagler: true,
+		ws:       conn,
+		reader:   nil,
 	}
 }
 
@@ -52,7 +66,6 @@ func (c *Connection) ReadMsg(timeout time.Duration) (m packet.Message, err error
 
 // Encode and WriteMessage to the socket
 func (c *Connection) WriteMessage(m packet.Message) error {
-	fmt.Printf("Sending Message: %+v\n", m)
 	_, err := c.conn.Write(m.Encode())
 	if err != nil {
 		return fmt.Errorf("failed to write message to socket: %w", err)
@@ -60,7 +73,10 @@ func (c *Connection) WriteMessage(m packet.Message) error {
 	return nil
 }
 func (c *Connection) Close() error {
-	return c.conn.Close()
+	if c.conn != nil {
+		return c.conn.Close()
+	}
+	return c.ws.Close(websocket.StatusNormalClosure, "connection closed")
 }
 func (c *Connection) IsLoggedIn() bool {
 	return c.isLoggedIn.Load()

@@ -1,13 +1,60 @@
 package connection
 
 import (
+	"context"
 	"fmt"
 	"time"
 	"tuff/packet"
+
+	"github.com/coder/websocket"
 )
+
+func timeout(t time.Duration) context.Context {
+	ctx, _ := context.WithTimeout(context.Background(), t)
+	return ctx
+}
 
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Login
 func (conn *Connection) HandleHandshake(cfg packet.StatusResponsePacketConfig) error {
+	if conn.isEagler {
+		return conn.eaglerHandshake(cfg)
+	}
+	return conn.javaHandshake(cfg)
+}
+
+func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) error {
+	typ, b, err := conn.ws.Read(timeout(time.Second * 10))
+	_ = b
+	if err != nil {
+		return fmt.Errorf("websocket error: %w", err)
+	}
+	// server list ping
+	if typ == websocket.MessageText {
+		fmt.Println(string(b))
+		const eaglerStatusJson = `
+			{"name":"%s",
+			"brand":"TuffMC",
+			"vers":"EaglercraftXServer/1.0.7",
+			"cracked":true,
+			"time":%d,
+			"type":"motd",
+			"data":{"cache":true,
+			"motd":["%s"],
+			"icon":"%s",
+			"online":%d,
+			"max":67,"players":[]}}`
+		status := fmt.Sprintf(eaglerStatusJson,
+			cfg.Description,        // %s - name
+			time.Now().UnixMilli(), // %d - time
+			cfg.Description,        // %s - motd
+			cfg.Favicon,            // %s - icon
+			cfg.PlayerCount,        // %d - online
+		)
+		conn.ws.Write(timeout(time.Second*10), websocket.MessageText, []byte(status))
+	}
+	return nil
+}
+func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
 	pkt_handshake, err := conn.ReadMsg(time.Second * 10)
 	if err != nil {
 		return fmt.Errorf("failed to read handshake message: %w", err)
