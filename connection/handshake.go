@@ -64,8 +64,13 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 		packet.EncodeEaglerHandshakeResponsePacket(),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to write handshake response: %w",err)
+		return fmt.Errorf("failed to write handshake response: %w", err)
 	}
+	typ, b, err = conn.ws.Read(timeout(time.Second * 10))
+	if err != nil {
+		return fmt.Errorf("failed to read Username packet: %w", err)
+	}
+	fmt.Println(string(b))
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
