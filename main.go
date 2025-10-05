@@ -137,4 +137,3 @@ func startWebsocketListener(addr string) {
 	}))
 }
 
-const jzml = `{"name":"EaglercraftXServer","brand":"lax1dude","vers":"EaglercraftXServer/1.0.7","plaf":"velocity","cracked":true,"time":1758554003989,"uuid":"cb703b97-1a8f-4a77-b6f9-ba16e9d8a4c4","type":"motd","data":{"cache":true,"motd":["§a§lWebMC","§7Minecraft Oneblock... With a twist!§r"],"icon":true,"online":32,"max":250,"players":[]}}`

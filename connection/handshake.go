@@ -1,12 +1,14 @@
 package connection
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
 	"tuff/packet"
 
 	"github.com/coder/websocket"
+	"github.com/google/uuid"
 )
 
 func timeout(t time.Duration) context.Context {
@@ -55,13 +57,11 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	if typ != websocket.MessageBinary {
 		return fmt.Errorf("Expected binary message, got %s", typ.String())
 	}
-	handshake_request, err := packet.DecodeEaglerHandshakeRequestPacket(b)
-	if err != nil {
-		return fmt.Errorf("failed to read handshake request packet")
-	}
-	fmt.Printf("Eagler Handshake %+v", handshake_request)
+	//the client has sent us their handshake request. we only accept 1.12.2 and
+	// eagler handshake v2 clients, so we dont care what the request says.
+	// Just blindly send an acknowledgement of a v2 1.12.2 client.
 	err = conn.ws.Write(timeout(time.Second*10), websocket.MessageBinary,
-		packet.EncodeEaglerHandshakeResponsePacket(),
+		packet.EncodeEaglerHandshakeAckPacket(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to write handshake response: %w", err)
@@ -70,7 +70,27 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	if err != nil {
 		return fmt.Errorf("failed to read Username packet: %w", err)
 	}
-	fmt.Println(string(b))
+	var buf = bytes.NewBuffer(b)
+	buf.ReadByte() //ignore packet id
+
+	unameLength, _ := buf.ReadByte()
+	username := buf.Next(int(unameLength))
+	conn.Username = string(username)
+
+	// send login ack
+	buf.Reset()
+	buf.WriteByte(4) //packet id
+	// username
+	buf.WriteByte(unameLength)
+	buf.WriteString(string(username))
+	//player uuid
+	playerUUID := uuid.NewMD5(packet.Namespace, username)
+	buf.Write(playerUUID[:])
+
+	conn.ws.Write(timeout(time.Second*10), websocket.MessageBinary,
+		buf.Bytes(),
+	)
+
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {

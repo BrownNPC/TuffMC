@@ -14,6 +14,8 @@ import (
 )
 
 type Connection struct {
+	// the Username of the connection joining.
+	Username   string
 	State      packet.ConnectionState
 	isLoggedIn atomic.Bool
 	// underlying socket
