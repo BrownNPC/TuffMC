@@ -35,3 +35,31 @@ func DecodeEaglerHandshakeRequestPacket(b []byte) (EaglerHandshakeRequestPacket,
 		ClientVersionString: string(clientVersionString),
 	}, nil
 }
+
+type EaglerHandshakeResponsePacket struct {
+	PacketId            byte
+	EaglerCraftVersion  byte
+	ClientBrand         string
+	ClientVersionString string
+	// 3 bytes of padding required..
+	_ [3]byte
+}
+
+func EncodeEaglerHandshakeResponsePacket() []byte {
+	var b bytes.Buffer
+	// packet id
+	b.WriteByte(1)
+	// eaglercraft version
+	b.WriteByte(1)
+	//Brand
+	b.WriteByte(byte(len("TuffMC")))
+	b.WriteString("TuffMC")
+
+	// Version
+	b.WriteByte(1)
+	b.WriteRune('1')
+
+	// 3 bytes padding required..
+	b.Write([]byte{0, 0, 0})
+	return b.Bytes()
+}
