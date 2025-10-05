@@ -1,11 +1,8 @@
 package connection
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 	"tuff/packet"
 
@@ -58,7 +55,10 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	if typ != websocket.MessageBinary {
 		return fmt.Errorf("Expected binary message, got %s", typ.String())
 	}
-	buf := bytes.NewBuffer(b)
+	handshake_request, err := packet.DecodeEaglerHandshakeRequestPacket(b)
+	if err != nil {
+		return fmt.Errorf("failed to read handshake request packet")
+	}
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
