@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -42,15 +43,15 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 			"type":"motd",
 			"data":{"cache":true,
 			"motd":["%s"],
-			"icon":"%s",
+			"icon":true,
 			"online":%d,
 			"max":67,"players":[]}}`
 		status := fmt.Sprintf(eaglerStatusJson,
 			cfg.Description,        // %s - name
 			time.Now().UnixMilli(), // %d - time
 			cfg.Description,        // %s - motd
-			cfg.Favicon,            // %s - icon
-			cfg.PlayerCount,        // %d - online
+			// cfg.Favicon,            // %s - icon
+			cfg.PlayerCount, // %d - online
 		)
 		return conn.ws.Write(timeout(time.Second*10), websocket.MessageText, []byte(status))
 	}
@@ -77,24 +78,27 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	username := buf.Next(int(unameLength))
 	conn.Username = string(username)
 
-	// send login ack
+	// build packet for login ack
 	buf.Reset()
-	buf.WriteByte(4) //packet id
+	buf.WriteByte(5) //packet id
 	// username
 	buf.WriteByte(unameLength)
 	buf.WriteString(string(username))
 	//player uuid
 	playerUUID := uuid.NewMD5(packet.Namespace, username)
 	buf.Write(playerUUID[:])
-
-	conn.ws.Write(timeout(time.Second*10), websocket.MessageBinary,
+// send login ack
+	err = conn.ws.Write(timeout(time.Second*10), websocket.MessageBinary,
 		buf.Bytes(),
 	)
+	if err != nil {
+		return fmt.Errorf("failed to write login ack: %w", err)
+	}
 	//Client may send profile / skin packet packetId == 7:
 	// we want to ignore it.
 	typ, b, err = conn.ws.Read(timeout(time.Second * 10))
 	if err != nil {
-		return fmt.Errorf("failed to wait for login state packet")
+		return fmt.Errorf("failed to wait for login state packet: %w", err)
 	}
 	if len(b) < 1 {
 		return fmt.Errorf("too small packet recieved")
@@ -108,7 +112,9 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	if b[0] != 8 {
 		return fmt.Errorf("expected play stage packet")
 	}
-	
+	conn.conn = websocket.NetConn(context.Background(), conn.ws, websocket.MessageBinary)
+	conn.reader = bufio.NewReader(conn.conn)
+	conn.isLoggedIn.Store(true)
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
