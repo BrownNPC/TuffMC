@@ -17,6 +17,9 @@ func timeout(t time.Duration) context.Context {
 // https://minecraft.wiki/w/Protocol?oldid=2772385#Login
 func (conn *Connection) HandleHandshake(cfg packet.StatusResponsePacketConfig) error {
 	if conn.isEagler {
+		for {
+			conn.eaglerHandshake(cfg)
+		}
 		return conn.eaglerHandshake(cfg)
 	}
 	return conn.javaHandshake(cfg)
@@ -59,6 +62,7 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	if err != nil {
 		return fmt.Errorf("failed to read handshake request packet")
 	}
+	fmt.Printf("Eagler Handshake %+v", handshake_request)
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
