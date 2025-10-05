@@ -87,7 +87,7 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	//player uuid
 	playerUUID := uuid.NewMD5(packet.Namespace, username)
 	buf.Write(playerUUID[:])
-// send login ack
+	// send login ack
 	err = conn.ws.Write(timeout(time.Second*10), websocket.MessageBinary,
 		buf.Bytes(),
 	)
@@ -103,18 +103,23 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	if len(b) < 1 {
 		return fmt.Errorf("too small packet recieved")
 	}
-	if b[0] == 7 {
-		typ, b, err = conn.ws.Read(timeout(time.Second * 10))
-		if err != nil {
-			return fmt.Errorf("failed to wait for login state packet")
-		}
-	}
-	if b[0] != 8 {
-		return fmt.Errorf("expected play stage packet")
-	}
+	// if b[0] == 7 {
+	// 	typ, b, err = conn.ws.Read(timeout(time.Second * 10))
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to wait for login state packet")
+	// 	}
+	// }
+	// if b[0] != 8 {
+	// 	return fmt.Errorf("expected play stage packet")
+	// }
 	conn.conn = websocket.NetConn(context.Background(), conn.ws, websocket.MessageBinary)
 	conn.reader = bufio.NewReader(conn.conn)
 	conn.isLoggedIn.Store(true)
+	err = conn.ws.Write(timeout(time.Second*10), websocket.MessageBinary, []byte{9})
+	// _, err = conn.conn.Write([]byte{9})
+	if err != nil {
+		return fmt.Errorf("failed to send final login packet: %w", err)
+	}
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
