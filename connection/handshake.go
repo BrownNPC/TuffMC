@@ -1,8 +1,11 @@
 package connection
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 	"tuff/packet"
 
@@ -50,8 +53,12 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 			cfg.Favicon,            // %s - icon
 			cfg.PlayerCount,        // %d - online
 		)
-		conn.ws.Write(timeout(time.Second*10), websocket.MessageText, []byte(status))
+		return conn.ws.Write(timeout(time.Second*10), websocket.MessageText, []byte(status))
 	}
+	if typ != websocket.MessageBinary {
+		return fmt.Errorf("Expected binary message, got %s", typ.String())
+	}
+	buf := bytes.NewBuffer(b)
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
