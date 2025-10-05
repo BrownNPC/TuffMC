@@ -70,9 +70,9 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	if err != nil {
 		return fmt.Errorf("failed to read Username packet: %w", err)
 	}
+	// get username
 	var buf = bytes.NewBuffer(b)
 	buf.ReadByte() //ignore packet id
-
 	unameLength, _ := buf.ReadByte()
 	username := buf.Next(int(unameLength))
 	conn.Username = string(username)
@@ -90,7 +90,25 @@ func (conn *Connection) eaglerHandshake(cfg packet.StatusResponsePacketConfig) e
 	conn.ws.Write(timeout(time.Second*10), websocket.MessageBinary,
 		buf.Bytes(),
 	)
-
+	//Client may send profile / skin packet packetId == 7:
+	// we want to ignore it.
+	typ, b, err = conn.ws.Read(timeout(time.Second * 10))
+	if err != nil {
+		return fmt.Errorf("failed to wait for login state packet")
+	}
+	if len(b) < 1 {
+		return fmt.Errorf("too small packet recieved")
+	}
+	if b[0] == 7 {
+		typ, b, err = conn.ws.Read(timeout(time.Second * 10))
+		if err != nil {
+			return fmt.Errorf("failed to wait for login state packet")
+		}
+	}
+	if b[0] != 8 {
+		return fmt.Errorf("expected play stage packet")
+	}
+	
 	return nil
 }
 func (conn *Connection) javaHandshake(cfg packet.StatusResponsePacketConfig) error {
